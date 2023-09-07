@@ -1,4 +1,6 @@
 # pip3 install opencv-python
+import glob
+
 import cv2
 import time
 from emailing import send_email
@@ -9,6 +11,9 @@ time.sleep(1)
 first_frame = None
 status_list = []
 status = 0
+count = 1
+image_selected = ''
+image_names = []
 
 while True:
     check, frame = video.read()
@@ -21,7 +26,7 @@ while True:
     delta_frame = cv2.absdiff(first_frame, gray_frame_gau)
 
     thresh_frame = cv2.threshold(delta_frame, 60, 255, cv2.THRESH_BINARY)[1]
-    dil_frame = cv2.dilate(thresh_frame, None, iterations=2)
+    dil_frame = cv2.dilate(src=thresh_frame, kernel=None, iterations=2)
     cv2.imshow("My video", dil_frame)
 
     contours, check = cv2.findContours(dil_frame, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -33,6 +38,11 @@ while True:
         rectangle = cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 3)
         if rectangle.any():
             status = 1
+            cv2.imwrite(f"./images/{count}.png", frame)
+            count = count + 1
+            image_names = glob.glob(f'./images/*.png')
+            index = int(len(image_names) / 2)
+            image_selected = image_names[index]
 
     status_list.append(status)
     status_list = status_list[-2:]
@@ -47,4 +57,5 @@ while True:
     if key == ord("q"):
         break
 
+print(image_selected)
 video.release()
