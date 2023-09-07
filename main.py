@@ -1,21 +1,31 @@
 # pip3 install opencv-python
-import glob
-
 import cv2
+import glob
+import os
 import time
 from emailing import send_email
+from threading import Thread
 
 video = cv2.VideoCapture(1)
 time.sleep(1)
 
 first_frame = None
 status_list = []
-status = 0
 count = 1
 image_selected = ''
 image_names = []
 
+
+def clean_folder():
+    images = glob.glob('./images/*.png')
+    for image in images:
+        os.remove(image)
+
+
 while True:
+    clean_thread = Thread(target=clean_folder)
+    clean_thread.daemon = True
+    status = 0
     check, frame = video.read()
     gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     gray_frame_gau = cv2.GaussianBlur(gray_frame, (21, 21), 0)
@@ -48,14 +58,16 @@ while True:
     status_list = status_list[-2:]
 
     if status_list[0] == 1 and status_list[1] == 0:
-        send_email()
+        email_thread = Thread(target=send_email, args=(image_selected, ))
+        email_thread.daemon = True
+        email_thread.start()
 
     cv2.imshow("Video", frame)
 
     key = cv2.waitKey(1)
 
     if key == ord("q"):
+        clean_thread.start()
         break
 
-print(image_selected)
 video.release()
